@@ -138,14 +138,14 @@ R2quickcalc = function(X,Y){
 #Slower version, but does not require full rank matrices?
 R2quickcalc_v2 = function(X,Y){
   # browser()
-  out1= .lm.fit(x=X,y=Y)
+  out1= stats::.lm.fit(x=X,y=Y)
   Y = as.numeric(Y)
   return(1- sum(out1$residuals^2)/sum((Y-mean(Y))^2))
 }
 
 # Estimate p=value from Bootstrap distribution ---------------------------------------------------------------------------------
 boot_pval = function(x, null_val=0){
-  x = na.omit(x)
+  x = stats::na.omit(x)
   perc = length(which(x<null_val))/length(x)
   p_val = 1-abs(.50-perc)*2
   return(p_val)
@@ -181,12 +181,12 @@ gb_CCA_SplitHalfSim = function(X_FIT,Y_FIT, ncomp=10, ProcrustX = NULL, Procrust
 # Pearson Correlation Confidence Interval Calculator  ---------------------------------------------------------------------------------
 
 CorrelationCIEstimator = function(r, n, alpha=0.05){
-  Fr = atanh(r)                 # Fisher Z Transform
+  Fr = base::atanh(r)                 # Fisher Z Transform
   SE = 1/((n-3)^.5)             # Standard Error
-  CI = qnorm(c(alpha/2,1-alpha/2), mean=Fr, sd=SE)
-  CI = tanh(CI)
+  CI = stats::qnorm(c(alpha/2,1-alpha/2), mean=Fr, sd=SE)
+  CI = base::tanh(CI)
   # p  = (1-pnorm(abs(Fr), mean=0, sd=SE))*2    # Fisher Z P value
-  t = r*sqrt((n-2)/(1-r^2))       # P-value estimated from t-distribution
-  p  = (1-pt(abs(t), df=n-2))*2
-  return(list(CI=CI,p=p))
+  t = r*base::sqrt((n-2)/(1-r^2))       # P-value estimated from t-distribution
+  p  = (1-stats::pt(base::abs(t), df=n-2))*2
+  return(base::list(CI=CI,p=p))
 }

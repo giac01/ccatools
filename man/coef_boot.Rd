@@ -22,11 +22,13 @@ coef_boot(
 
 \item{Nboot}{Numeric Scaler. Number of times to repeat bootstrap resampling.}
 
-\item{ProcrustX}{Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.}
-}
-\value{
+\item{ProcrustX}{Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.}
 
+\item{ProcrustY}{Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.}
 }
 \description{
-Percentile Bootstrap Estimation of canonical correlation coefficients
+This function runs the gb_CCA Canonical Correlation Analysis function multiple times to assess variability in the CCA loadings and canonical correlations
+Because bootstrap resampling can change the order of canonical variates that are extracted, or sign flipping can occur
+in some cases (i.e. a very similar latent variable is extracted but on some occasions the loadings are mostly positive or negative), we rotate the loadings
+in each bootstrap resample to map onto the loadings generated from the full, raw input datsets.
 }

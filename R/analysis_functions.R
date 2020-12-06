@@ -1,19 +1,17 @@
 #' Split-Half CCA code
-#' Run CCA model in training dataset, and and validate performance in testing dataset.
 #'
-#' The function estimates confidence intervals and p-values using the Fish
+#' Run CCA model in training dataset, and and validate performance in testing dataset.
+#' The function estimates confidence intervals and p-values using the ... .
 #'
 #' @param X_FIT Numeric Matrix [N, P1] containing the training dataset predictor variables.
 #' @param Y_FIT Numeric Matrix [N, P2] containing the training dataset outcome variables.
 #' @param X_PRED Numeric Matrix [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
 #' @param Y_PRED Numeric Matrix [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
-#' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha)% confidence interval for each canonical correlation. Default is .05 for estimating a 95% confidence interval.
+#' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha) confidence interval for each canonical correlation. Default is .05 for estimating a 95% confidence interval.
 #'
-#' @return list
 #' @export
 #'
-#' @examples
 cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
                             ncomp=NULL, alpha = 0.05){
 
@@ -43,34 +41,23 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
 }
 
-# Bootstrap CCA Code  ---------------------------------------------------------------------------------------
-# This function runs the gb_CCA Canonical Correlation Analysis function multiple times to assess variability in the CCA loadings and canonical correlations
-# Because bootstrap resampling can change the order of canonical variates that are extracted, or sign flipping can occur
-# in some cases (i.e. a very similar latent variable is extracted but on some occasions the loadings are mostly positive or negative), we rotate the loadings
-# in each bootstrap resample to map onto the loadings generated from the full, raw input datsets.
-
-# X_FIT - matrix including 'predictor' variables
-# Y_FIT - matrix inluding 'outcome' variables
-# ncomp - number of components to extract (must be lower than number of variables in X or Y matrix )
-# Nboot - number of bootstrap resamples to perform (ideally 1000-3000 as minimum)
-
-
-
-
-
 #' Percentile Bootstrap Estimation of canonical correlation coefficients
+#'
+#' This function runs the gb_CCA Canonical Correlation Analysis function multiple times to assess variability in the CCA loadings and canonical correlations
+#' Because bootstrap resampling can change the order of canonical variates that are extracted, or sign flipping can occur
+#' in some cases (i.e. a very similar latent variable is extracted but on some occasions the loadings are mostly positive or negative), we rotate the loadings
+#' in each bootstrap resample to map onto the loadings generated from the full, raw input datsets.
+#'
 #'
 #' @param X_FIT Numeric Matrix [N, P1] containing the predictor variables.
 #' @param Y_FIT Numeric Matrix [N, P2] containing the outcome variables.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
 #' @param Nboot Numeric Scaler. Number of times to repeat bootstrap resampling.
 #' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
-#' @param ProcrustX Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
+#' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
 #'
-#' @return
 #' @export
 #'
-#' @examples
 coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY = NULL){
   # browser()
   pb <- utils::txtProgressBar(min = 1, max = Nboot, style = 3)
@@ -87,7 +74,7 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
 
   for(i in 1:Nboot){
     # Randomly bootstrap resample data and fit CCA model.
-    BootResample = sample(nrow(X_FIT), replace = TRUE)
+    BootResample = base::sample(nrow(X_FIT), replace = TRUE)
 
 
     #Run CCA on bootstrap resampled data, rotating loadings using procrustes to map  onto the original model
@@ -100,12 +87,12 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
     YLoadings_ROTATED[[i]] = CCA_BootData$YLoadings
     cc[[i]]  = CCA_BootData$cc_pred
 
-    setTxtProgressBar(pb, value=i)
+    utils::setTxtProgressBar(pb, value=i)
 
   }
   #Estimate quantiles from boostrap distribution
 
-  XLoadings_Quantiles = apply(base::simplify2array(XLoadings_ROTATED), 1:2, quantile, prob = c(0.025, .5, 0.975))
+  XLoadings_Quantiles = apply(base::simplify2array(XLoadings_ROTATED), 1:2, stats::quantile, prob = c(0.025, .5, 0.975))
   XLoadings_Quantiles = lapply(1:ncomp, function(i) XLoadings_Quantiles[,,i])
   for(i in 1:ncomp){
     colnames(XLoadings_Quantiles[[i]]) = colnames(X_FIT)
@@ -113,7 +100,7 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
     XLoadings_Quantiles[[i]]$original = CCA_OriginalData$XLoadings[,i]
   }
 
-  YLoadings_Quantiles = apply(base::simplify2array(YLoadings_ROTATED), 1:2, quantile, prob = c(0.025, .5, 0.975))
+  YLoadings_Quantiles = apply(base::simplify2array(YLoadings_ROTATED), 1:2, stats::quantile, prob = c(0.025, .5, 0.975))
   YLoadings_Quantiles = lapply(1:ncomp, function(i) YLoadings_Quantiles[,,i])
   for(i in 1:ncomp){
     colnames(YLoadings_Quantiles[[i]]) = colnames(Y_FIT)
@@ -121,7 +108,7 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
     YLoadings_Quantiles[[i]]$original = CCA_OriginalData$YLoadings[,i]
   }
 
-  cc_quantiles = apply(base::simplify2array(cc), 1, quantile, prob = c(0.025, .5, 0.975))
+  cc_quantiles = apply(base::simplify2array(cc), 1, stats::quantile, prob = c(0.025, .5, 0.975))
 
 
   # Ouput Data
@@ -138,26 +125,36 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
 }
 
 
-
-# Cross-Validtation Bootstrap CCA code  ---------------------------------------------------------------------------------------
-# Algorithm for using cross-validation & bootstrap resampling to find unbiased canonical correlation and their sampling error
-# On each iteration, N-fold (default is 10 fold) cross-validation is used to generated predicted canonical variates for the complete sample. Following this,
-# the predicted variates are bootstrap resampled and canonical correlations are estimated from them.
-# Because bootstrap resampling can change the order of canonical variates that are extracted, or sign flipping can occur
-# in some cases (i.e. a very similar latent variable is extracted but on some occasions the loadings are mostly positive or negative), we rotate the loadings
-# in each during cross-validation to map onto the loadings generated from a smaller dataset (X_PROCRUSTES & Y_PROCRUSTES)
-
-# NOTE;
-# NBoot - Number of times to repeat the cross-validation + bootstrap procedure. In each iteration a brand new set of cross-validated predicted variates are generated and
-# ... bootstrap resampled from.
-
-CCA_CVboot = function(X_PROCRUSTES, Y_PROCRUSTES, X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NULL, ProcrustY = NULL, UseProgressBar=TRUE, UseProcrustes=TRUE){
+#'  Cross-Validtation Bootstrap CCA
+#'
+#' Algorithm for using cross-validation & bootstrap resampling to find unbiased canonical correlation and their
+#' sampling error. On each iteration, N-fold (default is 10 fold) cross-validation is used to generated predicted canonical
+#' variates for the complete sample. Following this, the predicted variates are bootstrap resampled and
+#' canonical correlations are estimated from them.
+#' Because bootstrap resampling can change the order of canonical variates that are extracted, or sign
+#' flipping can occur in some cases (i.e. a very similar latent variable is extracted but on some occasions
+#' the loadings are mostly positive or negative), we rotate the loadings in each during cross-validation to
+#' map onto the loadings generated from a smaller dataset (ProcrustX & ProcrustY)
+#'
+#' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
+#' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
+#' @param X_FIT Numeric Matrix [N, P1] containing the predictor variables.
+#' @param Y_FIT Numeric Matrix [N, P2] containing the outcome variables.
+#' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
+#' @param Nboot Numeric Scalar. Number of times to repeat k-fold cross-validation (yes its confusing it says "boot").
+#' @param Nfolds Numeric Scalar. Number of
+#' @param UseProgressBar Logical. Whether to show progress bar.
+#' @param UseProcrustes  Logical. Whether to use procrustes analysis.
+#'
+#' @export
+#'
+cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NULL, ProcrustY = NULL, UseProgressBar=TRUE, UseProcrustes=TRUE){
   # browser()
   if (UseProgressBar){
     pb <- utils::txtProgressBar(min = 0, max = Nboot, style = 3)
   }
 
-  CCA_OriginalData = gb_CCA(X_FIT=X_PROCRUSTES, Y_FIT=Y_PROCRUSTES, X_PRED=NULL, Y_PRED=NULL, ncomp=ncomp, ProcrustX = ProcrustX, ProcrustY = ProcrustY)
+  CCA_OriginalData = gb_CCA(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL, ncomp=ncomp, ProcrustX = ProcrustX, ProcrustY = ProcrustY)
 
   if (UseProcrustes==FALSE){
     CCA_OriginalData$XLoadings = NULL # By setting this to NULL, the gb_CCA function called below will not use procrustes rotations
@@ -179,8 +176,8 @@ CCA_CVboot = function(X_PROCRUSTES, Y_PROCRUSTES, X_FIT,Y_FIT, ncomp=10, Nboot=3
       # Fit_Index = (df_folds!=f) #Rows to select to fit data to
       # Pred_Index = (df_folds==f) #Rows to select to make predictions for
       #
-      Fit_Index = .Internal(unlist(df_folds[-f], FALSE, FALSE)) #Row numbers - Training Data
-      Pred_Index = .Internal(unlist(df_folds[f], FALSE, FALSE)) #Row numbers - Hold-Out Data
+      Fit_Index = base::unlist(df_folds[-f], FALSE, FALSE) #Row numbers - Training Data
+      Pred_Index = base::unlist(df_folds[f], FALSE, FALSE) #Row numbers - Hold-Out Data
 
       #Estimate CCA in trainning dataset and generate list of predictions for hold-out data - and append to Variate_predictions list
       Variate_predictions =  c(Variate_predictions,
@@ -193,10 +190,10 @@ CCA_CVboot = function(X_PROCRUSTES, Y_PROCRUSTES, X_FIT,Y_FIT, ncomp=10, Nboot=3
 
     #Put cross-validated predictions back in original order and in a data frame
     Variates_CrossValidated = data.table::rbindlist(Variate_predictions)
-    Variates_CrossValidated = Variates_CrossValidated[order(.Internal(unlist(df_folds, FALSE, FALSE))),]
+    Variates_CrossValidated = Variates_CrossValidated[base::order(unlist(df_folds, FALSE, FALSE)),]
 
     #Bootstrap cross-validation predictions
-    boot_i = .Internal(sample(nrow(Variates_CrossValidated),nrow(Variates_CrossValidated), TRUE, NULL))
+    boot_i = base::sample(nrow(Variates_CrossValidated),nrow(Variates_CrossValidated), TRUE, NULL)
     Variates_CrossValidated_b = as.matrix(Variates_CrossValidated[boot_i,])
 
     #Estimate canonical correlations
@@ -219,7 +216,7 @@ CCA_CVboot = function(X_PROCRUSTES, Y_PROCRUSTES, X_FIT,Y_FIT, ncomp=10, Nboot=3
 
 
     if (UseProgressBar){
-      setTxtProgressBar(pb, value=b)
+      utils::setTxtProgressBar(pb, value=b)
     }
   }
 
@@ -234,13 +231,13 @@ CCA_CVboot = function(X_PROCRUSTES, Y_PROCRUSTES, X_FIT,Y_FIT, ncomp=10, Nboot=3
   # Cross-Validation Quantiles
   cc_CV_quantiles = do.call("rbind.data.frame", cc_CV)
   colnames(cc_CV_quantiles) = paste0("cc",1:ncomp)
-  cc_CV_quantiles = apply(cc_CV_quantiles, 2, function(x) quantile(x, probs = c(0.025,.5,.975), type=6))
+  cc_CV_quantiles = apply(cc_CV_quantiles, 2, function(x) stats::quantile(x, probs = c(0.025,.5,.975), type=6))
   # cc_CV_pval = apply(cc_CV_quantiles, 2, function(x) boot_pval(x))
 
   # Cross-validation + Bootstrap Quantiles
   cc_CVBoot_quantiles = do.call("rbind.data.frame", cc_CVboot)
   colnames(cc_CVBoot_quantiles) = paste0("cc",1:ncomp)
-  cc_CVBoot_quantiles2 = apply(cc_CVBoot_quantiles, 2, function(x) quantile(x, probs = c(0.025,.5,.975), type=6))
+  cc_CVBoot_quantiles2 = apply(cc_CVBoot_quantiles, 2, function(x) stats::quantile(x, probs = c(0.025,.5,.975), type=6))
   cc_CVBoot_pval = apply(cc_CVBoot_quantiles, 2, function(x) boot_pval(x))
 
 
@@ -254,3 +251,4 @@ CCA_CVboot = function(X_PROCRUSTES, Y_PROCRUSTES, X_FIT,Y_FIT, ncomp=10, Nboot=3
 
 
 }
+
