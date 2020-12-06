@@ -1,6 +1,6 @@
 # Hello, world!
 #
-# This is an example function named 'hello' 
+# This is an example function named 'hello'
 # which prints 'Hello, world!'.
 #
 # You can learn more about package authoring with RStudio at:
@@ -16,3 +16,15 @@
 hello <- function() {
   print("Hello, world!")
 }
+#
+#
+# create_package("~/path/to/foofactors")
+#
+# use_git()
+#
+#
+# devtools::load_all(path="/home/rstudio/ccatools/ccatools/")
+#
+# devtools::load_all("ccatools")
+#
+# check()
