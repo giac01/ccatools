@@ -13,7 +13,7 @@ test_that("Internal Package CCA function gives identical output as stats::cancor
   res_base_r = stats::cancor(X,Y)
 
   #Get package R result
-  res_ccatools = gb_CCA(X,Y,ncomp=NULL)
+  res_ccatools = .cca(X,Y,ncomp=NULL)
 
 
   #Check Canonical Correlations
@@ -21,8 +21,8 @@ test_that("Internal Package CCA function gives identical output as stats::cancor
   expect_equal(abs(res_base_r$cor),abs(res_ccatools$cc_pred))
 
   #Check Raw Coefficients
-  expect_equal(abs(apply(res_base_r$xcoef,2, function(x) x/sqrt(sum(x^2)))),abs(res_ccatools$XLoadings))
-  expect_equal(abs(apply(res_base_r$ycoef,2, function(x) x/sqrt(sum(x^2)))),abs(res_ccatools$YLoadings))
+  expect_equal(abs(apply(res_base_r$xcoef,2, function(x) x/sqrt(sum(x^2)))),abs(res_ccatools$xcoef))
+  expect_equal(abs(apply(res_base_r$ycoef,2, function(x) x/sqrt(sum(x^2)))),abs(res_ccatools$ycoef))
 
 })
 
@@ -32,14 +32,14 @@ test_that("Check coef_boot ",{
   X = apply(iris[,1:2],2, as.numeric)
   Y = apply(iris[,3:4],2, as.numeric)
 
-  res = gb_CCA(X,Y, ncomp=NULL)
+  res = .cca(X,Y, ncomp=NULL)
   res_boot = coef_boot(X,Y,ncomp=2, Nboot=6000)
 
   #Check loadings look okay
-  expect_equal(abs(res_boot$XLoadings_Quantiles[[1]]$original),abs(res$XLoadings[,1]))
+  expect_equal(abs(res_boot$xcoef_Quantiles[[1]]$original),abs(res$xcoef[,1]))
 
-  expect_equal(round(res_boot$XLoadings_Quantiles[[1]][,1]*100), c(90,-43) )
-  expect_equal(round(res_boot$XLoadings_Quantiles[[1]][,3]*100), c(94,-35) )
+  expect_equal(round(res_boot$xcoef_Quantiles[[1]][,1]*100), c(90,-43) )
+  expect_equal(round(res_boot$xcoef_Quantiles[[1]][,3]*100), c(94,-35) )
 
 })
 

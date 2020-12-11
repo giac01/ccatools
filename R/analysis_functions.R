@@ -1,3 +1,152 @@
+#' Canonical Correlations
+#'
+#' @description
+#' Sightly quicker than stats::cancor, and allows you to easily fit cca models in one dataset and find predicted variates/canonical correlations in another dataset.
+#'
+#' The number of predictor (X) and outcome (Y) variables are denoted by P1 and P2 below, and N is sample size.
+#'
+#' The function also allows the user to rotate the raw coefficients using Procrustes Analyses to target matrices (ProcrustX & ProcrustY), prior to estimating variates.
+#'
+#' @param X_FIT Numeric Matrix [N, P1] containing the training dataset predictor variables.
+#' @param Y_FIT Numeric Matrix [N, P2] containing the training dataset outcome variables.
+#' @param X_PRED Numeric Matrix [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
+#' @param Y_PRED Numeric Matrix [N, P2] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
+#' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
+#' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
+#' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
+#' @param SafetyChecks Checks the input provided for mistakes (default = FALSE).
+#'
+#' @return A list containing the following components
+#' \itemize{
+#'   \item xcoef - Estimated raw coefficients (CCA weights) for the x (predictor) variables.
+#'   \item ycoef - Estimated raw coefficients (CCA weights) for the y (outcome) variables.
+#'   \item variates - Variates (latent variable scores), estimated from the raw coefficient in X_FIT/Y_FIT.
+#'   cbind.data.frame(xvariates, yvariates). If X_PRED and Y_PRED are provided, then  variates (and xvariates/yvariates) will be the predicted latent variable scores  from X_PRED/Y_PRED matrices.
+#'   \item xvariates - Variates (latent variable scores) for predictor variables.
+#'   \item yvariates - Variates (latent variable scores) for outcome variables.
+#'   \item cc_pred - Predicted Canonical Correlations, estimated using from X_PRED & Y_PRED if provided. If no PRED matrices are specified, then this simply returns the estimated canonical correlations from the training datsets (X_FIT/Y_FIT).
+#'   \item cc_fit - Estimated Canonical Correlation estimated from the training datasets (X_FIT/Y_FIT).
+
+#' }
+#'
+#' @export
+#'
+.cca = function(X_FIT,Y_FIT,X_PRED=NULL,Y_PRED=NULL,
+                  ncomp=10,
+                  ProcrustX = NULL, ProcrustY = NULL,
+                  SafetyChecks=FALSE){
+  # browser()
+  #Check some basic things
+  if (SafetyChecks){
+    if (nrow(X_FIT)!=nrow(Y_FIT)) stop("nrow of X_FIT and Y_FIT do not match")
+    if (!is.null(ProcrustX)){
+      if (ncol(ProcrustX)!=ncomp) stop("ProcrustX should have same number of columns to ncomp")
+    }
+    if (!is.null(ProcrustY)){
+      if (ncol(ProcrustY)!=ncomp) stop("ProcrustY should have same number of columns to ncomp")
+    }
+    if (!is.null(ncomp)){
+      if ((ncomp>ncol(X_FIT)) | (ncomp>ncol(Y_FIT)) ) stop("ncomp should be equal to or less than smallest number of variables in X_FIT or X_FIT")
+    }
+  }
+
+  #Set ncomp to the minimum of ncol
+  ncomp = min(c(ncomp,ncol(X_FIT),ncol(Y_FIT)))
+
+  #Scale FIT datasets
+  X = as.matrix(Rfast::standardise(X_FIT, center = TRUE, scale = TRUE))
+  Y = as.matrix(Rfast::standardise(Y_FIT, center = TRUE, scale = TRUE))
+
+  #Scale the PRED matrix using the FIT m and sd  - X variables
+  if (is.null(X_PRED)){
+    X_PRED = X
+  } else {
+    # Scale the PRED matrix by the FIT matrix
+    X_FIT_mat = as.matrix(X_FIT)
+    X_Mean = matrixStats::colMeans2(X_FIT_mat)
+    X_SD = matrixStats::colSds(X_FIT_mat)
+    X_PRED = t((t(X_PRED)-X_Mean)/X_SD)
+  }
+
+  #Scale the PRED matrix using the FIT m and sd  - Y variables
+  if (is.null(Y_PRED)){
+    Y_PRED = Y
+  } else {
+    # Scale the PRED matrix by the FIT matrix
+    Y_FIT_mat = as.matrix(Y_FIT)
+    Y_Mean = matrixStats::colMeans2(Y_FIT_mat)
+    Y_SD = matrixStats::colSds(Y_FIT_mat)
+    Y_PRED = t((t(Y_PRED)-Y_Mean)/Y_SD)
+  }
+
+  # Estimate Eigenvalues and Eigenvectors...
+  Sxx  = crossprod(X,X)
+  Syx  = crossprod(Y,X)
+  Syy  = crossprod(Y,Y)
+  Sxy  = crossprod(X,Y)
+
+  #Slightly slower to use below code!
+  # Sxx  = t(X) %*% X
+  # Syx  = t(Y) %*% X
+  # Syy  = t(Y) %*% Y
+  # Sxy  = t(X) %*% Y
+
+  V = solve(Syy) %*% Syx %*% solve(Sxx) %*% Sxy
+  W = solve(Sxx) %*% Sxy %*% solve(Syy) %*% Syx
+
+  Eig_V = eigen(V)
+  Eig_W = eigen(W)
+
+  cc = sqrt(Eig_V$values)[1:ncomp] # Canonical correlations from FITTED MATRIX
+
+  # Get loadings
+  ycoef = apply(as.matrix(Eig_V$vectors[,1:ncomp]),2,as.numeric)
+  xcoef = apply(as.matrix(Eig_W$vectors[,1:ncomp]),2,as.numeric)
+
+  # Optional Rotation of Loadings
+
+  if (!is.null(ProcrustX)){
+    xcoef = as.matrix(MCMCpack::procrustes(xcoef  , ProcrustX)$X.new)
+
+  }
+  if (!is.null(ProcrustY)){
+    ycoef = as.matrix(MCMCpack::procrustes(ycoef  , ProcrustY)$X.new)
+  }
+
+  # Estimate Canonical Variates
+
+  yvariates =  Y_PRED %*% ycoef
+  colnames(yvariates) = paste0("Y", 1:ncomp)
+
+  xvariates =  X_PRED %*% xcoef
+  colnames(xvariates) = paste0("X", 1:ncomp)
+
+  variates = cbind.data.frame(xvariates, yvariates)
+
+  cc_pred = Rfast::corpairs(xvariates, yvariates)
+
+  # Return Output
+
+  out = list(
+    #Loadings
+    ycoef = ycoef,
+    xcoef = xcoef,
+
+    #variates
+    variates = variates,
+    xvariates = xvariates,
+    yvariates = yvariates,
+
+    #Canonical Correlations
+    cc_fit = cc,                            #Canonical correlations estimated from the input data (fitted canonical correlations)
+    cc_pred = cc_pred                       #Canonical correlations estimated from the prediction data (predicted canonical correlations)
+  )
+
+
+  return(out)
+
+}
+
 #' Split-Half CCA code
 #'
 #' Run CCA model in training dataset, and and validate performance in testing dataset.
@@ -15,7 +164,7 @@
 cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
                             ncomp=NULL, alpha = 0.05){
 
-  model_results = gb_CCA(X_FIT=X_FIT,Y_FIT=Y_FIT,X_PRED=X_PRED,Y_PRED=Y_PRED,
+  model_results = .cca(X_FIT=X_FIT,Y_FIT=Y_FIT,X_PRED=X_PRED,Y_PRED=Y_PRED,
                          ncomp=ncomp,
                          ProcrustX = NULL, ProcrustY = NULL,
                          SafetyChecks=TRUE)
@@ -43,7 +192,7 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
 #' Percentile Bootstrap Estimation of canonical correlation coefficients
 #'
-#' This function runs the gb_CCA Canonical Correlation Analysis function multiple times to assess variability in the CCA loadings and canonical correlations
+#' This function runs the .cca Canonical Correlation Analysis function multiple times to assess variability in the CCA loadings and canonical correlations
 #' Because bootstrap resampling can change the order of canonical variates that are extracted, or sign flipping can occur
 #' in some cases (i.e. a very similar latent variable is extracted but on some occasions the loadings are mostly positive or negative), we rotate the loadings
 #' in each bootstrap resample to map onto the loadings generated from the full, raw input datsets.
@@ -63,13 +212,13 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
   pb <- utils::txtProgressBar(min = 1, max = Nboot, style = 3)
 
   #Run model on full dataset
-  CCA_OriginalData = gb_CCA(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL,
+  CCA_OriginalData = .cca(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL,
                             ProcrustX = ProcrustX, ProcrustY = ProcrustY,
                             ncomp=ncomp)
 
   #Lists to store bootstrap data in
-  YLoadings_ROTATED = list()  #Store rotated loadings from bootstrap resamples in here
-  XLoadings_ROTATED = list()
+  ycoef_ROTATED = list()  #Store rotated loadings from bootstrap resamples in here
+  xcoef_ROTATED = list()
   cc = list()                #Store canonical correlations from bootstrap resamples in hre
 
   for(i in 1:Nboot){
@@ -78,13 +227,13 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
 
 
     #Run CCA on bootstrap resampled data, rotating loadings using procrustes to map  onto the original model
-    CCA_BootData = gb_CCA(X_FIT=X_FIT[BootResample,], Y_FIT=Y_FIT[BootResample,],
-                          ProcrustX = CCA_OriginalData$XLoadings, ProcrustY = CCA_OriginalData$YLoadings,
+    CCA_BootData = .cca(X_FIT=X_FIT[BootResample,], Y_FIT=Y_FIT[BootResample,],
+                          ProcrustX = CCA_OriginalData$xcoef, ProcrustY = CCA_OriginalData$ycoef,
                           X_PRED=NULL, Y_PRED=NULL,
                           ncomp=ncomp)
 
-    XLoadings_ROTATED[[i]] = CCA_BootData$XLoadings
-    YLoadings_ROTATED[[i]] = CCA_BootData$YLoadings
+    xcoef_ROTATED[[i]] = CCA_BootData$xcoef
+    ycoef_ROTATED[[i]] = CCA_BootData$ycoef
     cc[[i]]  = CCA_BootData$cc_pred
 
     utils::setTxtProgressBar(pb, value=i)
@@ -92,20 +241,20 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
   }
   #Estimate quantiles from boostrap distribution
 
-  XLoadings_Quantiles = apply(base::simplify2array(XLoadings_ROTATED), 1:2, stats::quantile, prob = c(0.025, .5, 0.975))
-  XLoadings_Quantiles = lapply(1:ncomp, function(i) XLoadings_Quantiles[,,i])
+  xcoef_Quantiles = apply(base::simplify2array(xcoef_ROTATED), 1:2, stats::quantile, prob = c(0.025, .5, 0.975))
+  xcoef_Quantiles = lapply(1:ncomp, function(i) xcoef_Quantiles[,,i])
   for(i in 1:ncomp){
-    colnames(XLoadings_Quantiles[[i]]) = colnames(X_FIT)
-    XLoadings_Quantiles[[i]] = data.frame(t(XLoadings_Quantiles[[i]]))
-    XLoadings_Quantiles[[i]]$original = CCA_OriginalData$XLoadings[,i]
+    colnames(xcoef_Quantiles[[i]]) = colnames(X_FIT)
+    xcoef_Quantiles[[i]] = data.frame(t(xcoef_Quantiles[[i]]))
+    xcoef_Quantiles[[i]]$original = CCA_OriginalData$xcoef[,i]
   }
 
-  YLoadings_Quantiles = apply(base::simplify2array(YLoadings_ROTATED), 1:2, stats::quantile, prob = c(0.025, .5, 0.975))
-  YLoadings_Quantiles = lapply(1:ncomp, function(i) YLoadings_Quantiles[,,i])
+  ycoef_Quantiles = apply(base::simplify2array(ycoef_ROTATED), 1:2, stats::quantile, prob = c(0.025, .5, 0.975))
+  ycoef_Quantiles = lapply(1:ncomp, function(i) ycoef_Quantiles[,,i])
   for(i in 1:ncomp){
-    colnames(YLoadings_Quantiles[[i]]) = colnames(Y_FIT)
-    YLoadings_Quantiles[[i]] = data.frame(t(YLoadings_Quantiles[[i]]))
-    YLoadings_Quantiles[[i]]$original = CCA_OriginalData$YLoadings[,i]
+    colnames(ycoef_Quantiles[[i]]) = colnames(Y_FIT)
+    ycoef_Quantiles[[i]] = data.frame(t(ycoef_Quantiles[[i]]))
+    ycoef_Quantiles[[i]]$original = CCA_OriginalData$ycoef[,i]
   }
 
   cc_quantiles = apply(base::simplify2array(cc), 1, stats::quantile, prob = c(0.025, .5, 0.975))
@@ -114,8 +263,8 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
   # Ouput Data
 
   out = list(
-    XLoadings_Quantiles=XLoadings_Quantiles,
-    YLoadings_Quantiles=YLoadings_Quantiles,
+    xcoef_Quantiles=xcoef_Quantiles,
+    ycoef_Quantiles=ycoef_Quantiles,
     cc_quantiles,
     cc=cc
   )
@@ -154,11 +303,11 @@ cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NU
     pb <- utils::txtProgressBar(min = 0, max = Nboot, style = 3)
   }
 
-  CCA_OriginalData = gb_CCA(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL, ncomp=ncomp, ProcrustX = ProcrustX, ProcrustY = ProcrustY)
+  CCA_OriginalData = .cca(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL, ncomp=ncomp, ProcrustX = ProcrustX, ProcrustY = ProcrustY)
 
   if (UseProcrustes==FALSE){
-    CCA_OriginalData$XLoadings = NULL # By setting this to NULL, the gb_CCA function called below will not use procrustes rotations
-    CCA_OriginalData$YLoadings = NULL
+    CCA_OriginalData$xcoef = NULL # By setting this to NULL, the .cca function called below will not use procrustes rotations
+    CCA_OriginalData$ycoef = NULL
   }
 
   cc_CVboot = list()
@@ -181,9 +330,9 @@ cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NU
 
       #Estimate CCA in trainning dataset and generate list of predictions for hold-out data - and append to Variate_predictions list
       Variate_predictions =  c(Variate_predictions,
-                               list(gb_CCA(X_FIT  = X_FIT[Fit_Index,],  Y_FIT  = Y_FIT[Fit_Index,],
+                               list(.cca(X_FIT  = X_FIT[Fit_Index,],  Y_FIT  = Y_FIT[Fit_Index,],
                                            X_PRED = X_FIT[Pred_Index,], Y_PRED = Y_FIT[Pred_Index,], ncomp=ncomp,
-                                           ProcrustX = CCA_OriginalData$XLoadings, ProcrustY = CCA_OriginalData$YLoadings)$Variates)
+                                           ProcrustX = CCA_OriginalData$xcoef, ProcrustY = CCA_OriginalData$ycoef)$variates)
       )
 
     }
