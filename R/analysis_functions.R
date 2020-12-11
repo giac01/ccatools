@@ -214,7 +214,8 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
   #Run model on full dataset
   CCA_OriginalData = .cca(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL,
                             ProcrustX = ProcrustX, ProcrustY = ProcrustY,
-                            ncomp=ncomp)
+                            ncomp=ncomp,
+                            SafetyChecks = TRUE)
 
   #Lists to store bootstrap data in
   ycoef_ROTATED = list()  #Store rotated loadings from bootstrap resamples in here
