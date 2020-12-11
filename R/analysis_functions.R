@@ -8,7 +8,7 @@
 #' @param X_PRED Numeric Matrix [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
 #' @param Y_PRED Numeric Matrix [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
-#' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha) confidence interval for each canonical correlation. Default is .05 for estimating a 95% confidence interval.
+#' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha)\% confidence interval for each canonical correlation. Default is .05 for estimating a 95\% confidence interval.
 #'
 #' @export
 #'
@@ -201,8 +201,8 @@ cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NU
     # cc_CVboot = c(cc_CVboot , list(Rfast::corpairs(as.matrix(Variates_CrossValidated_b[,1:ncomp]),as.matrix(Variates_CrossValidated_b[,(ncomp+1):(2*ncomp)])))) #Not necessary
 
     #Estimate R2 for all outcome variables (with boot)
-    Variates_CV_Scaled = as.matrix(dataPreparation::fastScale(Variates_CrossValidated_b, verbose = FALSE))
-    Y_FIT_Scaled =       as.matrix(dataPreparation::fastScale(Y_FIT[boot_i,],verbose=FALSE))
+    Variates_CV_Scaled = as.matrix(Rfast::standardise(Variates_CrossValidated_b, center = TRUE, scale = TRUE))
+    Y_FIT_Scaled =       as.matrix(Rfast::standardise(Y_FIT[boot_i,],center = TRUE, scale = TRUE))
 
     R2_matrix[[b]] =
       sapply(1:ncomp, function(ncomp_i)

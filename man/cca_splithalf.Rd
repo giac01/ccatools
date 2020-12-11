@@ -17,7 +17,7 @@ cca_splithalf(X_FIT, Y_FIT, X_PRED, Y_PRED, ncomp = NULL, alpha = 0.05)
 
 \item{ncomp}{Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).}
 
-\item{alpha}{Numeric Scalar. Alpha level for estimating a 100(1-alpha) confidence interval for each canonical correlation. Default is .05 for estimating a 95% confidence interval.}
+\item{alpha}{Numeric Scalar. Alpha level for estimating a 100(1-alpha)\% confidence interval for each canonical correlation. Default is .05 for estimating a 95\% confidence interval.}
 }
 \description{
 Run CCA model in training dataset, and and validate performance in testing dataset.

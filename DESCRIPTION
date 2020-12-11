@@ -6,6 +6,7 @@ Author: Giacomo Bignardi
 Maintainer: Giacomo Bignardi <bignardig@outlook.com>
 Description: Desription... 
     Cross-validation, boostrap estimation,etc etc. 
+    The package depends on the R package "Rfast", which needs libgsl installed. 
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -19,7 +20,8 @@ Imports:
     patchwork,
     jtools,
     MCMCpack,
-    dataPreparation,
     matrixStats,
     Rfast
 Exports:
+Suggests: 
+    testthat

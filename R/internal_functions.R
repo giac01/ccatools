@@ -31,8 +31,8 @@ gb_CCA = function(X_FIT,Y_FIT,X_PRED=NULL,Y_PRED=NULL,
   ncomp = min(c(ncomp,ncol(X_FIT),ncol(Y_FIT)))
 
   #Scale FIT datasets
-  X = as.matrix(dataPreparation::fastScale(X_FIT, verbose=FALSE))
-  Y = as.matrix(dataPreparation::fastScale(Y_FIT, verbose=FALSE))
+  X = as.matrix(Rfast::standardise(X_FIT, center = TRUE, scale = TRUE))
+  Y = as.matrix(Rfast::standardise(Y_FIT, center = TRUE, scale = TRUE))
 
   #Scale the PRED matrix using the FIT m and sd  - X variables
   if (is.null(X_PRED)){
