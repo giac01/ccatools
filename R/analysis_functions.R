@@ -165,10 +165,10 @@
 cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
                             ncomp=NULL, alpha = 0.05){
 
-  if (is.data.frame(X_FIT)) XFIT  = as.matrix(X_FIT)
-  if (is.data.frame(Y_FIT)) XFIT  = as.matrix(Y_FIT)
-  if (is.data.frame(X_PRED)) XFIT = as.matrix(X_PRED)
-  if (is.data.frame(Y_PRED)) XFIT = as.matrix(Y_PRED)
+  if (is.data.frame(X_FIT)) X_FIT  = as.matrix(X_FIT)
+  if (is.data.frame(Y_FIT)) Y_FIT  = as.matrix(Y_FIT)
+  if (is.data.frame(X_PRED)) X_PRED = as.matrix(X_PRED)
+  if (is.data.frame(Y_PRED)) Y_PRED = as.matrix(Y_PRED)
 
   model_results = .cca(X_FIT=X_FIT,Y_FIT=Y_FIT,X_PRED=X_PRED,Y_PRED=Y_PRED,
                          ncomp=ncomp,
@@ -217,8 +217,8 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
   # browser()
   pb <- utils::txtProgressBar(min = 1, max = Nboot, style = 3)
 
-  if (is.data.frame(X_FIT)) XFIT  = as.matrix(X_FIT)
-  if (is.data.frame(Y_FIT)) XFIT  = as.matrix(Y_FIT)
+  if (is.data.frame(X_FIT)) X_FIT  = as.matrix(X_FIT)
+  if (is.data.frame(Y_FIT)) Y_FIT  = as.matrix(Y_FIT)
 
   #Run model on full dataset
   CCA_OriginalData = .cca(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL,
@@ -297,8 +297,8 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
 #'
 #' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
 #' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
-#' @param X_FIT Numeric Matrix [N, P1] containing the predictor variables.
-#' @param Y_FIT Numeric Matrix [N, P2] containing the outcome variables.
+#' @param X_FIT Numeric Matrix or Data Frame [N, P1] containing the predictor variables.
+#' @param Y_FIT Numeric Matrix or Data Frame [N, P2] containing the outcome variables.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
 #' @param Nboot Numeric Scalar. Number of times to repeat k-fold cross-validation (yes its confusing it says "boot").
 #' @param Nfolds Numeric Scalar. Number of
@@ -308,6 +308,9 @@ coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY
 #' @export
 #'
 cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NULL, ProcrustY = NULL, UseProgressBar=TRUE, UseProcrustes=TRUE){
+  if (is.data.frame(X_FIT)) X_FIT  = as.matrix(X_FIT)
+  if (is.data.frame(Y_FIT)) Y_FIT  = as.matrix(Y_FIT)
+
   # browser()
   if (UseProgressBar){
     pb <- utils::txtProgressBar(min = 0, max = Nboot, style = 3)
