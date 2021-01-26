@@ -34,10 +34,11 @@
 .cca = function(X_FIT,Y_FIT,X_PRED=NULL,Y_PRED=NULL,
                   ncomp=10,
                   ProcrustX = NULL, ProcrustY = NULL,
-                  SafetyChecks=FALSE){
+                  SafetyChecks=TRUE){
   # browser()
   #Check some basic things
   if (SafetyChecks){
+    if (!is.matrix(X_FIT) | !is.matrix(Y_FIT)) stop("both X_FIT and Y_FIT should be matrices")
     if (nrow(X_FIT)!=nrow(Y_FIT)) stop("nrow of X_FIT and Y_FIT do not match")
     if (!is.null(ProcrustX)){
       if (ncol(ProcrustX)!=ncomp) stop("ProcrustX should have same number of columns to ncomp")
@@ -150,12 +151,12 @@
 #' Split-Half CCA code
 #'
 #' Run CCA model in training dataset, and and validate performance in testing dataset.
-#' The function estimates confidence intervals and p-values using the ... .
+#' The function estimates confidence intervals and p-values using standard inferential methods of Pearson's correlation coefficient.
 #'
-#' @param X_FIT Numeric Matrix [N, P1] containing the training dataset predictor variables.
-#' @param Y_FIT Numeric Matrix [N, P2] containing the training dataset outcome variables.
-#' @param X_PRED Numeric Matrix [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
-#' @param Y_PRED Numeric Matrix [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
+#' @param X_FIT Numeric Matrix or Data Frame [N, P1] containing the training dataset predictor variables.
+#' @param Y_FIT Numeric Matrix or Data Frame [N, P2] containing the training dataset outcome variables.
+#' @param X_PRED Numeric Matrix or Data Frame [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
+#' @param Y_PRED Numeric Matrix or Data Frame [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
 #' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha)\% confidence interval for each canonical correlation. Default is .05 for estimating a 95\% confidence interval.
 #'
@@ -163,6 +164,11 @@
 #'
 cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
                             ncomp=NULL, alpha = 0.05){
+
+  if (is.data.frame(X_FIT)) XFIT  = as.matrix(X_FIT)
+  if (is.data.frame(Y_FIT)) XFIT  = as.matrix(Y_FIT)
+  if (is.data.frame(X_PRED)) XFIT = as.matrix(X_PRED)
+  if (is.data.frame(Y_PRED)) XFIT = as.matrix(Y_PRED)
 
   model_results = .cca(X_FIT=X_FIT,Y_FIT=Y_FIT,X_PRED=X_PRED,Y_PRED=Y_PRED,
                          ncomp=ncomp,
@@ -198,8 +204,8 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 #' in each bootstrap resample to map onto the loadings generated from the full, raw input datsets.
 #'
 #'
-#' @param X_FIT Numeric Matrix [N, P1] containing the predictor variables.
-#' @param Y_FIT Numeric Matrix [N, P2] containing the outcome variables.
+#' @param X_FIT Numeric Matrix or Data Frame [N, P1] containing the predictor variables.
+#' @param Y_FIT Numeric Matrix or Data Frame [N, P2] containing the outcome variables.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
 #' @param Nboot Numeric Scaler. Number of times to repeat bootstrap resampling.
 #' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
@@ -210,6 +216,9 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 coef_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30,ProcrustX = NULL, ProcrustY = NULL){
   # browser()
   pb <- utils::txtProgressBar(min = 1, max = Nboot, style = 3)
+
+  if (is.data.frame(X_FIT)) XFIT  = as.matrix(X_FIT)
+  if (is.data.frame(Y_FIT)) XFIT  = as.matrix(Y_FIT)
 
   #Run model on full dataset
   CCA_OriginalData = .cca(X_FIT=X_FIT, Y_FIT=Y_FIT, X_PRED=NULL, Y_PRED=NULL,

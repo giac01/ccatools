@@ -2,7 +2,7 @@
 % Please edit documentation in R/analysis_functions.R
 \name{.cca}
 \alias{.cca}
-\title{Canonical Correlation Function}
+\title{Canonical Correlations}
 \usage{
 .cca(
   X_FIT,
@@ -12,7 +12,7 @@
   ncomp = 10,
   ProcrustX = NULL,
   ProcrustY = NULL,
-  SafetyChecks = FALSE
+  SafetyChecks = TRUE
 )
 }
 \arguments{
