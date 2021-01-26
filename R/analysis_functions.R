@@ -12,8 +12,8 @@
 #' @param X_PRED Numeric Matrix [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
 #' @param Y_PRED Numeric Matrix [N, P2] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
-#' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
-#' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.
+#' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix to ProcrustX target matrix.
+#' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix to ProcrustY target matrix.
 #' @param SafetyChecks Checks the input provided for mistakes (default = FALSE).
 #'
 #' @return A list containing the following components
@@ -158,11 +158,14 @@
 #' @param X_PRED Numeric Matrix or Data Frame [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
 #' @param Y_PRED Numeric Matrix or Data Frame [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.
 #' @param ncomp Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).
+#' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix obtained from X_FIT to ProcrustX target matrix. This is then used when fitting the cca model to X_PRED.
+#' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix obtained from Y_FIT to ProcrustY target matrix. This is then used when fitting the cca model to Y_PRED.
 #' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha)\% confidence interval for each canonical correlation. Default is .05 for estimating a 95\% confidence interval.
 #'
 #' @export
 #'
 cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
+                         ProcrustX = NULL, ProcrustY = NULL,
                             ncomp=NULL, alpha = 0.05){
 
   if (is.data.frame(X_FIT)) X_FIT  = as.matrix(X_FIT)
@@ -172,7 +175,7 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
   model_results = .cca(X_FIT=X_FIT,Y_FIT=Y_FIT,X_PRED=X_PRED,Y_PRED=Y_PRED,
                          ncomp=ncomp,
-                         ProcrustX = NULL, ProcrustY = NULL,
+                         ProcrustX = ProcrustX, ProcrustY = ProcrustY,
                          SafetyChecks=TRUE)
 
   # Estimate Confidence Intervals
