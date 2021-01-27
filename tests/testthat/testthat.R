@@ -26,6 +26,26 @@ test_that("Internal Package CCA function gives identical output as stats::cancor
 
 })
 
+
+test_that("Test functions work when there is only one outcome",{
+
+  set.seed(100)
+  X = scale(sapply(1:50, function(x) stats::rnorm(200)))
+  Y = as.matrix(scale(sapply(1:1, function(x) stats::rnorm(200))))
+
+  #Get base R result
+
+  #Get package R result
+  res_ccatools = .cca(X,Y,ncomp=NULL)
+  expect_error(
+    cca_splithalf(X_FIT = X[1:100,],            Y_FIT  = as.matrix(Y[1:100,]),
+                  X_PRED = X[101:200,], Y_PRED = as.matrix(Y[101:200,]),
+                  alpha = .05
+    ), NA
+  )
+
+})
+
 test_that("Check coef_boot ",{
 
   utils::data(iris)
@@ -33,7 +53,7 @@ test_that("Check coef_boot ",{
   Y = apply(iris[,3:4],2, as.numeric)
 
   res = .cca(X,Y, ncomp=NULL)
-  res_boot = coef_boot(X,Y,ncomp=2, Nboot=6000)
+  res_boot = coef_boot(X,Y,ncomp=2, Nboot=10000)
 
   #Check loadings look okay
   expect_equal(abs(res_boot$xcoef_Quantiles[[1]]$original),abs(res$xcoef[,1]))
@@ -63,4 +83,23 @@ test_that("Check cca_splithalf ",{
 
 })
 
+test_that("Check R2 Estimates Are Good ",{
+
+  N = 1000
+  x = rnorm(N, mean= 10)
+
+  x_mat = sapply(1:10, function(i) x + 1*rnorm(N))
+  y = x + rnorm(N)
+  dat = cbind.data.frame(x_mat,y)
+  out = summary(lm(y ~ ., data=data.frame(scale(dat))))
+
+
+  expect_equal(
+    .R2quickcalc_v2(scale(x_mat),scale(y)),
+    .R2quickcalc(scale(x_mat),scale(y)),
+    out$r.squared
+
+
+  )
+})
 

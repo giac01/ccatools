@@ -153,6 +153,13 @@
 #' Run CCA model in training dataset, and and validate performance in testing dataset.
 #' The function estimates confidence intervals and p-values using standard inferential methods of Pearson's correlation coefficient.
 #'
+#' The function also calculates the variance explained (see R2_Matrix) for each outcome variable when running separate linear regression models  using the predictor canonical variates estimated from X_FIT (& Y_FIT).
+#' The number of canonical variates used in the regression model is altered from 1-all to examine how R2 increases when adding a new variate. T
+#'
+#' The function also calculates the variance explained (R2) for each outcome variance when using a linear regression model estimated in the training dataset (X_PRED & Y_PRED), to predict each outcome variable.
+#' Note that in this case, we estimate the regression beta coefficients in the training dataset (getting a different set of beta coefficients for each outcome), and simply apply them in the testing datasets and estimate the squared
+#' correlation between predicted and observed outcomes.
+#'
 #' @param X_FIT Numeric Matrix or Data Frame [N, P1] containing the training dataset predictor variables.
 #' @param Y_FIT Numeric Matrix or Data Frame [N, P2] containing the training dataset outcome variables.
 #' @param X_PRED Numeric Matrix or Data Frame [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.
@@ -161,6 +168,16 @@
 #' @param ProcrustX Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix obtained from X_FIT to ProcrustX target matrix. This is then used when fitting the cca model to X_PRED.
 #' @param ProcrustY Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix obtained from Y_FIT to ProcrustY target matrix. This is then used when fitting the cca model to Y_PRED.
 #' @param alpha Numeric Scalar. Alpha level for estimating a 100(1-alpha)\% confidence interval for each canonical correlation. Default is .05 for estimating a 95\% confidence interval.
+#'
+#' @return A list containing the following components
+#' \itemize{
+#'   \item model_results - Full output from the ccatools::.cca function used internallly.
+#'   \item predicted_cc - Predicted Canonical Correlations
+#'   \item confint_cc - Predicted Canonical Correlation Confidence Interval
+#'   \item pvalue_cc - P-value for Predicted Canonical Correlation
+#'   \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
+#'   \item R2_Matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+#' }
 #'
 #' @export
 #'
@@ -182,19 +199,59 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
   samplesize = nrow(X_PRED)
   predicted_cc = model_results$cc_pred
-  confint_cc = sapply(predicted_cc, function(x) CorrelationCIEstimator(x, samplesize, alpha=alpha)$CI)
+  confint_cc = sapply(predicted_cc, function(x) .CorrelationCIEstimator(x, samplesize, alpha=alpha)$CI)
   rownames(confint_cc) = c("LB","UB") # 'lower bound' and 'upper bound' of confidence interval
   colnames(confint_cc) = paste0("cc",1:ncol(confint_cc))
-  pvalue_cc = sapply(predicted_cc, function(x) CorrelationCIEstimator(x, samplesize, alpha=alpha)$p)
+  pvalue_cc = sapply(predicted_cc, function(x) .CorrelationCIEstimator(x, samplesize, alpha=alpha)$p)
   combined_cc = rbind.data.frame(predicted_cc, confint_cc, pvalue_cc)
   rownames(combined_cc) = c("cc", "LB", "UB", "p")
+
+  # Estimate R2 for each outcome variable when varying the number of X_FIT variates regressed
+
+  Variates_Scaled =    base::scale(model_results$xvariates, center = TRUE, scale = TRUE)
+  Y_PRED_Scaled =      base::scale(Y_PRED, center = TRUE, scale = TRUE)
+
+  R2_matrix =
+    sapply(1:ncol(Variates_Scaled), function(ncomp_i)
+      sapply(1:ncol(Y_FIT), function(y_i)
+        .R2quickcalc(X=Variates_Scaled[,1:ncomp_i, drop = FALSE],
+                     Y=Y_PRED_Scaled[,y_i, drop=FALSE])
+      )
+    )
+  R2_matrix = as.matrix(R2_matrix)
+
+  rownames(R2_matrix) = colnames(Y_PRED)
+  colnames(R2_matrix) = paste0("cc", 1:ncol(R2_matrix))
+
+  # Variance explained (R2) for each outcome using simple linear model u
+  intercept = rep(1, nrow(X_FIT)) # add intercept column to training data
+
+  X_FIT_int = cbind(
+    intercept,
+    X_FIT
+  )
+
+  beta_matrix = stats::lm.fit(x=X_FIT_int,y=Y_FIT)$coefficients #matrix of regression coefficients
+  beta_matrix = base::as.matrix(beta_matrix)
+
+  X_PRED_int = cbind(
+    intercept,
+    X_PRED
+  )
+
+  predicted_YPRED_vals = X_PRED_int %*% beta_matrix
+
+  LM_R2 = Rfast::corpairs(predicted_YPRED_vals, Y_PRED)^2
+
+  R2_matrix = cbind.data.frame(R2_matrix, LM_R2)
 
   return(list(
     model_results = model_results,
     predicted_cc  = predicted_cc,
     confint_cc    = confint_cc,
     pvalue_cc     = pvalue_cc,
-    combined_cc   = combined_cc
+    combined_cc   = combined_cc,
+    R2_matrix     = R2_matrix
   ))
 
 }
@@ -372,7 +429,7 @@ cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NU
     R2_matrix[[b]] =
       sapply(1:ncomp, function(ncomp_i)
         sapply(1:ncol(Y_FIT), function(y_i)
-          R2quickcalc(X=Variates_CV_Scaled[,1:ncomp_i],Y=Y_FIT_Scaled[,y_i])
+          .R2quickcalc(X=Variates_CV_Scaled[,1:ncomp_i],Y=Y_FIT_Scaled[,y_i])
         )
       )
 
@@ -403,7 +460,7 @@ cca_cv_boot = function(X_FIT,Y_FIT, ncomp=10, Nboot=30, Nfolds=10,ProcrustX = NU
   cc_CVBoot_quantiles = do.call("rbind.data.frame", cc_CVboot)
   colnames(cc_CVBoot_quantiles) = paste0("cc",1:ncomp)
   cc_CVBoot_quantiles2 = apply(cc_CVBoot_quantiles, 2, function(x) stats::quantile(x, probs = c(0.025,.5,.975), type=6))
-  cc_CVBoot_pval = apply(cc_CVBoot_quantiles, 2, function(x) boot_pval(x))
+  cc_CVBoot_pval = apply(cc_CVBoot_quantiles, 2, function(x) .boot_pval(x))
 
 
   return(list(

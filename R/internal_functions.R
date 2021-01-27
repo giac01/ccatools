@@ -1,23 +1,27 @@
 # Function for VERY QUICK linear modelling  ---------------------------------------------------------------------------------------
 # returns an R-squared as output
 # WARNING - requires input to be scaled matrices!!
-R2quickcalc = function(X,Y){
+.R2quickcalc = function(X,Y){
   # browser()
+  intercept = base::rep(1,nrow(X))
+  X = base::cbind(intercept, X)
   out1= Rfast::lmfit(x=X,y=Y)
   Y = as.numeric(Y)
   return(1- sum(out1$residuals^2)/sum((Y-mean(Y))^2))
 }
 
 #Slower version, but does not require full rank matrices?
-R2quickcalc_v2 = function(X,Y){
+.R2quickcalc_v2 = function(X,Y){
   # browser()
+  intercept = base::rep(1,nrow(X))
+  X = base::cbind(intercept, X)
   out1= stats::.lm.fit(x=X,y=Y)
   Y = as.numeric(Y)
   return(1- sum(out1$residuals^2)/sum((Y-mean(Y))^2))
 }
 
 # Estimate p=value from Bootstrap distribution ---------------------------------------------------------------------------------
-boot_pval = function(x, null_val=0){
+.boot_pval = function(x, null_val=0){
   x = stats::na.omit(x)
   perc = length(which(x<null_val))/length(x)
   p_val = 1-abs(.50-perc)*2
@@ -53,7 +57,7 @@ gb_CCA_SplitHalfSim = function(X_FIT,Y_FIT, ncomp=10, ProcrustX = NULL, Procrust
 
 # Pearson Correlation Confidence Interval Calculator  ---------------------------------------------------------------------------------
 
-CorrelationCIEstimator = function(r, n, alpha=0.05){
+.CorrelationCIEstimator = function(r, n, alpha=0.05){
   Fr = base::atanh(r)                 # Fisher Z Transform
   SE = 1/((n-3)^.5)             # Standard Error
   CI = stats::qnorm(c(alpha/2,1-alpha/2), mean=Fr, sd=SE)
