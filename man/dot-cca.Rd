@@ -26,9 +26,9 @@
 
 \item{ncomp}{Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).}
 
-\item{ProcrustX}{Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. All CCA predictor raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.}
+\item{ProcrustX}{Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix to ProcrustX target matrix.}
 
-\item{ProcrustY}{Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. All CCA outcome raw coefficients obtained during the bootstrap resampling will be rotated to this target matrix.}
+\item{ProcrustY}{Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix to ProcrustY target matrix.}
 
 \item{SafetyChecks}{Checks the input provided for mistakes (default = FALSE).}
 }

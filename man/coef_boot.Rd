@@ -14,9 +14,9 @@ coef_boot(
 )
 }
 \arguments{
-\item{X_FIT}{Numeric Matrix [N, P1] containing the predictor variables.}
+\item{X_FIT}{Numeric Matrix or Data Frame [N, P1] containing the predictor variables.}
 
-\item{Y_FIT}{Numeric Matrix [N, P2] containing the outcome variables.}
+\item{Y_FIT}{Numeric Matrix or Data Frame [N, P2] containing the outcome variables.}
 
 \item{ncomp}{Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).}
 

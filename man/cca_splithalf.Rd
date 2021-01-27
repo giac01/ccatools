@@ -4,22 +4,54 @@
 \alias{cca_splithalf}
 \title{Split-Half CCA code}
 \usage{
-cca_splithalf(X_FIT, Y_FIT, X_PRED, Y_PRED, ncomp = NULL, alpha = 0.05)
+cca_splithalf(
+  X_FIT,
+  Y_FIT,
+  X_PRED,
+  Y_PRED,
+  ProcrustX = NULL,
+  ProcrustY = NULL,
+  ncomp = NULL,
+  alpha = 0.05
+)
 }
 \arguments{
-\item{X_FIT}{Numeric Matrix [N, P1] containing the training dataset predictor variables.}
+\item{X_FIT}{Numeric Matrix or Data Frame [N, P1] containing the training dataset predictor variables.}
 
-\item{Y_FIT}{Numeric Matrix [N, P2] containing the training dataset outcome variables.}
+\item{Y_FIT}{Numeric Matrix or Data Frame [N, P2] containing the training dataset outcome variables.}
 
-\item{X_PRED}{Numeric Matrix [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.}
+\item{X_PRED}{Numeric Matrix or Data Frame [N, P1] containing the testing dataset predictor variables. Variables should be ordered in the same way as for X_FIT.}
 
-\item{Y_PRED}{Numeric Matrix [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.}
+\item{Y_PRED}{Numeric Matrix or Data Frame [N, P1] containing the testing dataset outcome variables. Variables should be ordered in the same way as for Y_FIT.}
+
+\item{ProcrustX}{Numeric Matrix [ncomp, P1] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix obtained from X_FIT to ProcrustX target matrix. This is then used when fitting the cca model to X_PRED.}
+
+\item{ProcrustY}{Numeric Matrix [ncomp, P2] containing target matrix for Procrustes Analysis. Will align raw coefficient matrix obtained from Y_FIT to ProcrustY target matrix. This is then used when fitting the cca model to Y_PRED.}
 
 \item{ncomp}{Numeric Scalar. Number of CCA components to keep in analyses. Must be equal to or less than min(P1,P2).}
 
 \item{alpha}{Numeric Scalar. Alpha level for estimating a 100(1-alpha)\% confidence interval for each canonical correlation. Default is .05 for estimating a 95\% confidence interval.}
 }
+\value{
+A list containing the following components
+\itemize{
+  \item model_results - Full output from the ccatools::.cca function used internallly.
+  \item predicted_cc - Predicted Canonical Correlations
+  \item confint_cc - Predicted Canonical Correlation Confidence Interval
+  \item pvalue_cc - P-value for Predicted Canonical Correlation
+  \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
+  \item R2_Matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+}
+}
 \description{
 Run CCA model in training dataset, and and validate performance in testing dataset.
-The function estimates confidence intervals and p-values using the ... .
+The function estimates confidence intervals and p-values using standard inferential methods of Pearson's correlation coefficient.
+}
+\details{
+The function also calculates the variance explained (see R2_Matrix) for each outcome variable when running separate linear regression models  using the predictor canonical variates estimated from X_FIT (& Y_FIT).
+The number of canonical variates used in the regression model is altered from 1-all to examine how R2 increases when adding a new variate. T
+
+The function also calculates the variance explained (R2) for each outcome variance when using a linear regression model estimated in the training dataset (X_PRED & Y_PRED), to predict each outcome variable.
+Note that in this case, we estimate the regression beta coefficients in the training dataset (getting a different set of beta coefficients for each outcome), and simply apply them in the testing datasets and estimate the squared
+correlation between predicted and observed outcomes.
 }
