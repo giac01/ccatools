@@ -234,6 +234,7 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   beta_matrix = stats::lm.fit(x=X_FIT_int,y=Y_FIT)$coefficients #matrix of regression coefficients
   beta_matrix = base::as.matrix(beta_matrix)
 
+  intercept = rep(1, nrow(X_PRED)) # add intercept column to training data
   X_PRED_int = cbind(
     intercept,
     X_PRED
