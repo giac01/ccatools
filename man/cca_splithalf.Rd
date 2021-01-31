@@ -40,7 +40,8 @@ A list containing the following components
   \item confint_cc - Predicted Canonical Correlation Confidence Interval
   \item pvalue_cc - P-value for Predicted Canonical Correlation
   \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
-  \item R2_Matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+  \item R2_matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+  \item R2_matrix_unbiased - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
 }
 }
 \description{
@@ -51,7 +52,12 @@ The function estimates confidence intervals and p-values using standard inferent
 The function also calculates the variance explained (see R2_Matrix) for each outcome variable when running separate linear regression models  using the predictor canonical variates estimated from X_FIT (& Y_FIT).
 The number of canonical variates used in the regression model is altered from 1-all to examine how R2 increases when adding a new variate. T
 
-The function also calculates the variance explained (R2) for each outcome variance when using a linear regression model estimated in the training dataset (X_PRED & Y_PRED), to predict each outcome variable.
-Note that in this case, we estimate the regression beta coefficients in the training dataset (getting a different set of beta coefficients for each outcome), and simply apply them in the testing datasets and estimate the squared
-correlation between predicted and observed outcomes.
+The function also calculates the variance explained (R2) for each outcome variance when using a linear regression model to predict each outcome variable using the CCA variates.
+The number of CCA variates used in each linear model is altered to exmaine its impact on the total variance explained.
+
+Two versions of the same algorithm are used. The first, producing R2_matrix as output, uses the predicted CCA variates in the testing dataset as input to linear regression models to predict each outcome.
+Therefore, this leads to  bias in R2, especially when the sample size is small (hence why some use the adjusted R2 metric), and should be avoided unless very large sample sizes are used.
+
+The second version of the algorithm, which produces R2_matrix_unbiased as output, runs the linear regression models also in the training dataset.
+Therefore to get the predicted outcome scores, we multiply the testing dataset predictor scores (X_PRED) to the a raw coefficients (xcoef) and then to the linear regression coefficients (beta).
 }
