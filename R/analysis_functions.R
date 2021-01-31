@@ -80,6 +80,12 @@
     Y_PRED = t((t(Y_PRED)-Y_Mean)/Y_SD)
   }
 
+  # Scaled input data!
+  scaled_input_data = list(X = X,
+                           Y = Y,
+                           X_PRED = X_PRED,
+                           Y_PRED = Y_PRED)
+
   # Estimate Eigenvalues and Eigenvectors...
   Sxx  = crossprod(X,X)
   Syx  = crossprod(Y,X)
@@ -129,6 +135,9 @@
   # Return Output
 
   out = list(
+    #Scaled Input Data
+    scaled_input_data = scaled_input_data,
+
     #Loadings
     ycoef = ycoef,
     xcoef = xcoef,
@@ -156,9 +165,15 @@
 #' The function also calculates the variance explained (see R2_Matrix) for each outcome variable when running separate linear regression models  using the predictor canonical variates estimated from X_FIT (& Y_FIT).
 #' The number of canonical variates used in the regression model is altered from 1-all to examine how R2 increases when adding a new variate. T
 #'
-#' The function also calculates the variance explained (R2) for each outcome variance when using a linear regression model estimated in the training dataset (X_PRED & Y_PRED), to predict each outcome variable.
-#' Note that in this case, we estimate the regression beta coefficients in the training dataset (getting a different set of beta coefficients for each outcome), and simply apply them in the testing datasets and estimate the squared
-#' correlation between predicted and observed outcomes.
+#' The function also calculates the variance explained (R2) for each outcome variance when using a linear regression model to predict each outcome variable using the CCA variates.
+#' The number of CCA variates used in each linear model is altered to exmaine its impact on the total variance explained.
+#'
+#' Two versions of the same algorithm are used. The first, producing R2_matrix as output, uses the predicted CCA variates in the testing dataset as input to linear regression models to predict each outcome.
+#' Therefore, this leads to  bias in R2, especially when the sample size is small (hence why some use the adjusted R2 metric), and should be avoided unless very large sample sizes are used.
+#'
+#' The second version of the algorithm, which produces R2_matrix_unbiased as output, runs the linear regression models also in the training dataset.
+#' Therefore to get the predicted outcome scores, we multiply the testing dataset predictor scores (X_PRED) to the a raw coefficients (xcoef) and then to the linear regression coefficients (beta).
+#'
 #'
 #' @param X_FIT Numeric Matrix or Data Frame [N, P1] containing the training dataset predictor variables.
 #' @param Y_FIT Numeric Matrix or Data Frame [N, P2] containing the training dataset outcome variables.
@@ -176,7 +191,8 @@
 #'   \item confint_cc - Predicted Canonical Correlation Confidence Interval
 #'   \item pvalue_cc - P-value for Predicted Canonical Correlation
 #'   \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
-#'   \item R2_Matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+#'   \item R2_matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+#'   \item R2_matrix_unbiased - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
 #' }
 #'
 #' @export
@@ -185,15 +201,21 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
                          ProcrustX = NULL, ProcrustY = NULL,
                             ncomp=NULL, alpha = 0.05){
 
+  # Convert data frames to matrices
+
   if (is.data.frame(X_FIT)) X_FIT  = as.matrix(X_FIT)
   if (is.data.frame(Y_FIT)) Y_FIT  = as.matrix(Y_FIT)
   if (is.data.frame(X_PRED)) X_PRED = as.matrix(X_PRED)
   if (is.data.frame(Y_PRED)) Y_PRED = as.matrix(Y_PRED)
 
+  # Fit Model (this bit is really doing the heavy lifting)
+
   model_results = .cca(X_FIT=X_FIT,Y_FIT=Y_FIT,X_PRED=X_PRED,Y_PRED=Y_PRED,
                          ncomp=ncomp,
                          ProcrustX = ProcrustX, ProcrustY = ProcrustY,
                          SafetyChecks=TRUE)
+
+  ## Get Interesting Summary Statistics from CCA model ##
 
   # Estimate Confidence Intervals
 
@@ -206,10 +228,12 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   combined_cc = rbind.data.frame(predicted_cc, confint_cc, pvalue_cc)
   rownames(combined_cc) = c("cc", "LB", "UB", "p")
 
-  # Estimate R2 for each outcome variable when varying the number of X_FIT variates regressed
+  # OLDER METHOD -----
+  # Estimate R2 for each outcome variable, when varying the number of X_FIT variates used, in linear regression models linking CCA variates to each outcome
+  ## Note that here, we get the raw coefficients from X_FIT & Y_FIT, but we fit the linear model in the testing dataset, which will lead to some bias (with the standard R2 measure)
 
-  Variates_Scaled =    base::scale(model_results$xvariates, center = TRUE, scale = TRUE)
-  Y_PRED_Scaled =      base::scale(Y_PRED, center = TRUE, scale = TRUE)
+  Variates_Scaled =    base::scale(model_results$xvariates, center = TRUE, scale = TRUE)   # Note that this is using the variates from X_PRED, which may lead to some bias... (alternative approach listed below)
+  Y_PRED_Scaled =      model_results$scaled_input_data$Y_PRED
 
   R2_matrix =
     sapply(1:ncol(Variates_Scaled), function(ncomp_i)
@@ -223,28 +247,50 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   rownames(R2_matrix) = colnames(Y_PRED)
   colnames(R2_matrix) = paste0("cc", 1:ncol(R2_matrix))
 
-  # Variance explained (R2) for each outcome using simple linear model u
-  intercept = rep(1, nrow(X_FIT)) # add intercept column to training data
+  # NEWER METHOD -----
+  # Estimate R2 for each outcome variable, when varying the number of X_FIT variates used, in linear regression models linking CCA variates to each outcome
+  ## Note that here, we get the raw coefficients from X_FIT & Y_FIT, **AND** we fit the linear model from the variates in the training dataset (X_PRED & Y_PRED), which eliminates bias (well not considering other shenanigans the analyst can do...)
 
-  X_FIT_int = cbind(
-    intercept,
-    X_FIT
-  )
+  # Matrix of training data X CCA variates, with intercept column added.
 
-  beta_matrix = stats::lm.fit(x=X_FIT_int,y=Y_FIT)$coefficients #matrix of regression coefficients
+  xvariates_fitted = model_results$scaled_input_data$X %*% model_results$xcoef
+  xvariates_fitted = .addintercept(xvariates_fitted) # Sets first column to intercept
+
+  # This section runs LOTS of linear models linking CCA variates to each outcome variable, and testing the variance explained in the testing dataset.
+  ncomp = min(c(ncomp,ncol(X_FIT),ncol(Y_FIT)))
+
+  R2_matrix_unbiased =
+    sapply(2:(ncomp+1), function(i){                       #the +1 is necessary as the first column is an intercept...
+
+    beta_matrix = stats::lm.fit(x = as.matrix(xvariates_fitted[,1:i]),
+                                y = model_results$scaled_input_data$Y)$coefficients #matrix of regression coefficients
+    beta_matrix = base::as.matrix(beta_matrix)
+
+    x_variates_PRED = model_results$scaled_input_data$X_PRED %*% model_results$xcoef
+    predicted_YPRED_vals = .addintercept(x_variates_PRED)[,1:i] %*% beta_matrix
+    Rfast::corpairs(predicted_YPRED_vals, Y_PRED)^2        #Squared correlation between predicted and observed outcomes
+    })
+
+  R2_matrix_unbiased = as.matrix(R2_matrix_unbiased)
+  rownames(R2_matrix_unbiased) = colnames(Y_PRED)
+  colnames(R2_matrix_unbiased) = paste0("cc", 1:ncol(R2_matrix))
+
+  rm(xvariates_fitted)
+
+  # Variance explained (R2) for each outcome using simple linear model
+
+  beta_matrix = stats::lm.fit(x = .addintercept(model_results$scaled_input_data$X),
+                              y =               model_results$scaled_input_data$Y)$coefficients #matrix of regression coefficients
   beta_matrix = base::as.matrix(beta_matrix)
 
-  intercept = rep(1, nrow(X_PRED)) # add intercept column to training data
-  X_PRED_int = cbind(
-    intercept,
-    X_PRED
-  )
+  predicted_YPRED_vals = .addintercept(model_results$scaled_input_data$X_PRED) %*% beta_matrix
 
-  predicted_YPRED_vals = X_PRED_int %*% beta_matrix
-
-  LM_R2 = Rfast::corpairs(predicted_YPRED_vals, Y_PRED)^2
+  LM_R2 = Rfast::corpairs(predicted_YPRED_vals,
+                          model_results$scaled_input_data$Y_PRED)^2  #Squared correlation between predicted and observed outcomes
 
   R2_matrix = cbind.data.frame(R2_matrix, LM_R2)
+  R2_matrix_unbiased = cbind.data.frame(R2_matrix_unbiased, LM_R2)
+
 
   return(list(
     model_results = model_results,
@@ -252,7 +298,8 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
     confint_cc    = confint_cc,
     pvalue_cc     = pvalue_cc,
     combined_cc   = combined_cc,
-    R2_matrix     = R2_matrix
+    R2_matrix     = R2_matrix,
+    R2_matrix_unbiased = R2_matrix_unbiased
   ))
 
 }

@@ -38,7 +38,7 @@ test_that("Test functions work when there is only one outcome",{
   #Get package R result
   res_ccatools = .cca(X,Y,ncomp=NULL)
   expect_error(
-    cca_splithalf(X_FIT = X[1:100,],            Y_FIT  = as.matrix(Y[1:100,]),
+    cca_splithalf(X_FIT = X[1:100,],    Y_FIT  = as.matrix(Y[1:100,]),
                   X_PRED = X[101:200,], Y_PRED = as.matrix(Y[101:200,]),
                   alpha = .05
     ), NA
@@ -102,4 +102,59 @@ test_that("Check R2 Estimates Are Good ",{
 
   )
 })
+
+## ---- Ignore below ----
+
+## Code to test function
+#
+# rm(list=ls())
+# set.seed(100)
+# X = scale(sapply(1:30, function(x) stats::rnorm(1000)))
+# Y = scale(sapply(1:22, function(x) stats::rnorm(1000)))
+#
+# X_FIT = X[1:500,]
+# Y_FIT  = as.matrix(Y[1:500,])
+# X_PRED = X[501:1000,]
+# Y_PRED = as.matrix(Y[501:1000,])
+# alpha = .05
+# ProcrustX = NULL
+# ProcrustY = NULL
+# ncomp=10
+# rm(X,Y)
+
+# #
+# rm(list=ls())
+# set.seed(100)
+# N = 200 # MUST BE EVEN NUMBER
+# x = rnorm(N)
+# y = scale(rnorm(N) + x*0)
+# X = scale(sapply(1:30, function(z) x + stats::rnorm(N)))
+# Y = scale(sapply(1:22, function(z) y + stats::rnorm(N)))
+#
+# X_FIT = X[1:(N/2),]
+# Y_FIT  = as.matrix(Y[1:(N/2),])
+# X_PRED = X[(N/2+1):N,]
+# Y_PRED = as.matrix(Y[(N/2+1):N,])
+# alpha = .05
+# ProcrustX = NULL
+# ProcrustY = NULL
+# ncomp=10
+# rm(X,Y,x,y)
+#
+# model_test = ccatools::cca_splithalf(X_FIT = X_FIT,
+#                                Y_FIT = Y_FIT,
+#                                X_PRED = X_PRED,
+#                                Y_PRED = Y_PRED,
+#                                alpha = .05,
+#                                ProcrustX = NULL,
+#                                ProcrustY = NULL,
+#                                ncomp=1
+# )
+#
+#
+#
+# # model_test$R2_matrix_unbiased[,-11]>model_test$R2_matrix_unbiased[,11]
+# model_test$R2_matrix_unbiased
+#
+# model_test$R2_matrix
 

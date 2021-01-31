@@ -1,3 +1,20 @@
+# Add intercept to matrix
+
+.addintercept = function(matrix){
+  intercept = rep(1, nrow(matrix)) # add intercept column to training data
+
+  return(
+    (
+      cbind(
+        intercept,
+        matrix
+      )
+    )
+  )
+
+}
+
+
 # Function for VERY QUICK linear modelling  ---------------------------------------------------------------------------------------
 # returns an R-squared as output
 # WARNING - requires input to be scaled matrices!!
