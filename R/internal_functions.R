@@ -1,5 +1,20 @@
-# Add intercept to matrix
+# Coefficient of Determination Estimation
+## https://en.wikipedia.org/wiki/Coefficient_of_determination
 
+.R2 = function(X,Y){
+  Res = Y - X #Matrix of residuals
+  Yt = base::apply(base::as.matrix(Y), 2, function(x) x - mean(x, na.rm=TRUE) )
+
+  SSres =  base::crossprod(Res, Res)        # Residual Sums of Squares
+  SStot =  base::crossprod(Yt, Yt)          # Y (total) Sums of Squares
+
+  R2 = base::diag(1 - (SSres/SStot))
+
+  return(R2)
+}
+
+
+# Add intercept to matrix
 .addintercept = function(matrix){
   intercept = rep(1, nrow(matrix)) # add intercept column to training data
 

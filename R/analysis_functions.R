@@ -191,8 +191,7 @@
 #'   \item confint_cc - Predicted Canonical Correlation Confidence Interval
 #'   \item pvalue_cc - P-value for Predicted Canonical Correlation
 #'   \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
-#'   \item R2_matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
-#'   \item R2_matrix_unbiased - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+#'   \item R2_matrix_unbiased - Matrix with outcome variables on rows, and columns indicating the variance explained (R2; estimated with coefficient of determination) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
 #' }
 #'
 #' @export
@@ -228,24 +227,6 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   combined_cc = rbind.data.frame(predicted_cc, confint_cc, pvalue_cc)
   rownames(combined_cc) = c("cc", "LB", "UB", "p")
 
-  # OLDER METHOD -----
-  # Estimate R2 for each outcome variable, when varying the number of X_FIT variates used, in linear regression models linking CCA variates to each outcome
-  ## Note that here, we get the raw coefficients from X_FIT & Y_FIT, but we fit the linear model in the testing dataset, which will lead to some bias (with the standard R2 measure)
-
-  Variates_Scaled =    base::scale(model_results$xvariates, center = TRUE, scale = TRUE)   # Note that this is using the variates from X_PRED, which may lead to some bias... (alternative approach listed below)
-  Y_PRED_Scaled =      model_results$scaled_input_data$Y_PRED
-
-  R2_matrix =
-    sapply(1:ncol(Variates_Scaled), function(ncomp_i)
-      sapply(1:ncol(Y_FIT), function(y_i)
-        .R2quickcalc(X=Variates_Scaled[,1:ncomp_i, drop = FALSE],
-                     Y=Y_PRED_Scaled[,y_i, drop=FALSE])
-      )
-    )
-  R2_matrix = as.matrix(R2_matrix)
-
-  rownames(R2_matrix) = colnames(Y_PRED)
-  colnames(R2_matrix) = paste0("cc", 1:ncol(R2_matrix))
 
   # NEWER METHOD -----
   # Estimate R2 for each outcome variable, when varying the number of X_FIT variates used, in linear regression models linking CCA variates to each outcome
@@ -268,12 +249,12 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
     x_variates_PRED = model_results$scaled_input_data$X_PRED %*% model_results$xcoef
     predicted_YPRED_vals = .addintercept(x_variates_PRED)[,1:i] %*% beta_matrix
-    Rfast::corpairs(predicted_YPRED_vals, Y_PRED)^2        #Squared correlation between predicted and observed outcomes
+    .R2(predicted_YPRED_vals, Y_PRED)        # Coefficient of Determination between predicted and observed outcomes
     })
 
   R2_matrix_unbiased = as.matrix(R2_matrix_unbiased)
-  rownames(R2_matrix_unbiased) = colnames(Y_PRED)
-  colnames(R2_matrix_unbiased) = paste0("cc", 1:ncol(R2_matrix))
+    rownames(R2_matrix_unbiased) = colnames(Y_PRED)
+    colnames(R2_matrix_unbiased) = paste0("cc", 1:ncol(R2_matrix_unbiased))
 
   rm(xvariates_fitted)
 
@@ -285,10 +266,9 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
   predicted_YPRED_vals = .addintercept(model_results$scaled_input_data$X_PRED) %*% beta_matrix
 
-  LM_R2 = Rfast::corpairs(predicted_YPRED_vals,
+  LM_R2 = .R2(predicted_YPRED_vals,
                           model_results$scaled_input_data$Y_PRED)^2  #Squared correlation between predicted and observed outcomes
 
-  R2_matrix = cbind.data.frame(R2_matrix, LM_R2)
   R2_matrix_unbiased = cbind.data.frame(R2_matrix_unbiased, LM_R2)
 
 
@@ -298,7 +278,6 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
     confint_cc    = confint_cc,
     pvalue_cc     = pvalue_cc,
     combined_cc   = combined_cc,
-    R2_matrix     = R2_matrix,
     R2_matrix_unbiased = R2_matrix_unbiased
   ))
 
