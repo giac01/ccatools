@@ -234,22 +234,23 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
   # Matrix of training data X CCA variates, with intercept column added.
 
-  xvariates_fitted = model_results$scaled_input_data$X %*% model_results$xcoef
-  xvariates_fitted = .addintercept(xvariates_fitted) # Sets first column to intercept
+  xvariates_fitted =  ccatools:::.addintercept( model_results$scaled_input_data$X      %*% model_results$xcoef )
+  xvariates_predict = ccatools:::.addintercept( model_results$scaled_input_data$X_PRED %*% model_results$xcoef )
 
   # This section runs LOTS of linear models linking CCA variates to each outcome variable, and testing the variance explained in the testing dataset.
   ncomp = min(c(ncomp,ncol(X_FIT),ncol(Y_FIT)))
 
   R2_matrix_unbiased =
-    sapply(2:(ncomp+1), function(i){                       #the +1 is necessary as the first column is an intercept...
+    sapply(2:(ncomp+1), function(i){                       # The +1 is necessary as the first column is an intercept...
 
-    beta_matrix = stats::lm.fit(x = as.matrix(xvariates_fitted[,1:i]),
-                                y = model_results$scaled_input_data$Y)$coefficients #matrix of regression coefficients
-    beta_matrix = base::as.matrix(beta_matrix)
+    betas = stats::lm.fit( x= xvariates_fitted[,1:i],             # Regression coefficients for making predictions with
+                    y= model_results$scaled_input_data$Y
+                  )
 
-    x_variates_PRED = model_results$scaled_input_data$X_PRED %*% model_results$xcoef
-    predicted_YPRED_vals = .addintercept(x_variates_PRED)[,1:i] %*% beta_matrix
-    .R2(predicted_YPRED_vals, Y_PRED)        # Coefficient of Determination between predicted and observed outcomes
+    predictions = base::as.matrix(xvariates_predict[,1:i] %*% betas$coefficients) # prediction = X %*% A %*% B where X (observed), A (coefficients), B (regression coefficients),
+
+    .R2(predictions, model_results$scaled_input_data$Y_PRED)
+
     })
 
   R2_matrix_unbiased = as.matrix(R2_matrix_unbiased)
