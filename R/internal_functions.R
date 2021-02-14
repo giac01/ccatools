@@ -2,6 +2,7 @@
 ## https://en.wikipedia.org/wiki/Coefficient_of_determination
 
 .R2 = function(X,Y){
+  if (nrow(X)!=nrow(Y)) stop(".R2 Fail; nrow don't match!!")
   Res = Y - X #Matrix of residuals
   Yt = base::apply(base::as.matrix(Y), 2, function(x) x - mean(x, na.rm=TRUE) )
 

@@ -267,7 +267,7 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   predicted_YPRED_vals = .addintercept(model_results$scaled_input_data$X_PRED) %*% beta_matrix
 
   LM_R2 = .R2(predicted_YPRED_vals,
-                          model_results$scaled_input_data$Y_PRED)^2  #Squared correlation between predicted and observed outcomes
+                          model_results$scaled_input_data$Y_PRED)  #Squared correlation between predicted and observed outcomes
 
   R2_matrix_unbiased = cbind.data.frame(R2_matrix_unbiased, LM_R2)
 
