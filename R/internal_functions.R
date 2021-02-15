@@ -1,3 +1,22 @@
+.isBinaryVariable = function(x){
+
+  return(2==base::length(base::table(x,useNA="no")))
+
+}
+
+# Converts into binary variable (0, 1)
+
+.makeBinary = function(x){
+
+  return(base::as.numeric(x>base::min(x, na.rm = TRUE)))
+
+}
+
+.inverseLogit = function(x){
+  return(1/(1+exp(-1*(x))))
+}
+
+
 # Coefficient of Determination Estimation
 ## https://en.wikipedia.org/wiki/Coefficient_of_determination
 

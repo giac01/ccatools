@@ -191,7 +191,8 @@
 #'   \item confint_cc - Predicted Canonical Correlation Confidence Interval
 #'   \item pvalue_cc - P-value for Predicted Canonical Correlation
 #'   \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
-#'   \item R2_matrix_unbiased - Matrix with outcome variables on rows, and columns indicating the variance explained (R2; estimated with coefficient of determination) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+#'   \item R2_matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2; estimated with coefficient of determination) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+#'   \item R2_matrix_BinaryOutcomes_Combined - Same as R2_matrix, but using logistic regression to predict binary outcomes. The same coefficient of determination is calculated using the response residuals and response sums of squares. Will return NULL if there are no binary outcomes. Note that this fucntion automatically recodes binary outcomes to 0/1 for logistic regression.
 #' }
 #'
 #' @export
@@ -240,7 +241,7 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   # This section runs LOTS of linear models linking CCA variates to each outcome variable, and testing the variance explained in the testing dataset.
   ncomp = min(c(ncomp,ncol(X_FIT),ncol(Y_FIT)))
 
-  R2_matrix_unbiased =
+  R2_matrix =
     sapply(2:(ncomp+1), function(i){                       # The +1 is necessary as the first column is an intercept...
 
     betas = stats::lm.fit( x= xvariates_fitted[,1:i],             # Regression coefficients for making predictions with
@@ -253,11 +254,9 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
 
     })
 
-  R2_matrix_unbiased = as.matrix(R2_matrix_unbiased)
-    rownames(R2_matrix_unbiased) = colnames(Y_PRED)
-    colnames(R2_matrix_unbiased) = paste0("cc", 1:ncol(R2_matrix_unbiased))
-
-  rm(xvariates_fitted)
+  R2_matrix = as.matrix(R2_matrix)
+    rownames(R2_matrix) = colnames(Y_PRED)
+    colnames(R2_matrix) = paste0("cc", 1:ncol(R2_matrix))
 
   # Variance explained (R2) for each outcome using simple linear model
 
@@ -270,8 +269,66 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
   LM_R2 = .R2(predicted_YPRED_vals,
                           model_results$scaled_input_data$Y_PRED)  #Squared correlation between predicted and observed outcomes
 
-  R2_matrix_unbiased = cbind.data.frame(R2_matrix_unbiased, LM_R2)
+  R2_matrix = cbind.data.frame(R2_matrix, LM_R2)
 
+  rm(beta_matrix, predicted_YPRED_vals, LM_R2)
+
+  ####### Prediction of binary outcomes
+  R2_matrix_BinaryOutcomes = NULL
+  R2_matrix_BinaryOutcomes_Combined = NULL
+  BinaryOutcomes = which(apply(model_results$scaled_input_data$Y_PRED,2, ccatools:::.isBinaryVariable))
+
+  if (length(BinaryOutcomes)>0){
+
+    Y_PRED_Binary = model_results$scaled_input_data$Y_PRED[,BinaryOutcomes]
+    Y_PRED_Binary = apply(Y_PRED_Binary, 2, ccatools:::.makeBinary) # Rescales outcomes so they're binary (0,1)
+
+    Y_FIT_Binary = model_results$scaled_input_data$Y[,BinaryOutcomes]
+    Y_FIT_Binary = apply(Y_FIT_Binary, 2, ccatools:::.makeBinary) # Rescales outcomes so they're binary (0,1)
+
+    R2_matrix_BinaryOutcomes =
+      sapply(2:(ncomp+1), function(i){                       # The +1 is necessary as the first column is an intercept...
+
+        beta_matrix = sapply(1:ncol(Y_FIT_Binary), function(c) {
+                            stats::glm.fit( x = xvariates_fitted[,1:i],             # Regression coefficients for making predictions with
+                                            y = Y_FIT_Binary[,c],
+                                            family = binomial(link = "logit")
+                                          )$coefficients
+                  })
+
+        predictions = base::as.matrix(xvariates_predict[,1:i] %*% beta_matrix) # prediction = X %*% A %*% B where X (observed), A (coefficients), B (regression coefficients),
+
+        predictions = .inverseLogit(predictions)
+
+        .R2(predictions, Y_PRED_Binary)
+
+      })
+
+    R2_matrix_BinaryOutcomes = as.data.frame(R2_matrix_BinaryOutcomes)
+      rownames(R2_matrix_BinaryOutcomes) = colnames(Y_PRED_Binary)
+      colnames(R2_matrix_BinaryOutcomes) = paste0("cc", 1:ncol(R2_matrix_BinaryOutcomes))
+
+
+    # Predict all variables (not using CCA variates)
+
+    beta_matrix = sapply(1:ncol(Y_FIT_Binary), function(c) {
+      stats::glm.fit( x = .addintercept(model_results$scaled_input_data$X),             # Regression coefficients for making predictions with
+                      y = Y_FIT_Binary[,c],
+                      family = binomial(link = "logit")
+      )$coefficients
+    })
+
+    predictions = base::as.matrix(.addintercept(model_results$scaled_input_data$X_PRED) %*% beta_matrix) # prediction = X %*% A %*% B where X (observed), A (coefficients), B (regression coefficients),
+
+    predictions = .inverseLogit(predictions)
+
+    R2_matrix_BinaryOutcomes$LM_R2 = .R2(predictions, Y_PRED_Binary)
+
+    rm(predictions, beta_matrix)
+
+    R2_matrix_BinaryOutcomes_Combined = R2_matrix
+    R2_matrix_BinaryOutcomes_Combined[BinaryOutcomes,] = R2_matrix_BinaryOutcomes
+  }
 
   return(list(
     model_results = model_results,
@@ -279,7 +336,9 @@ cca_splithalf = function(X_FIT,Y_FIT,X_PRED,Y_PRED,
     confint_cc    = confint_cc,
     pvalue_cc     = pvalue_cc,
     combined_cc   = combined_cc,
-    R2_matrix_unbiased = R2_matrix_unbiased
+    R2_matrix     = R2_matrix,
+    R2_matrix_BinaryOutcomes = R2_matrix_BinaryOutcomes,
+    R2_matrix_BinaryOutcomes_Combined = R2_matrix_BinaryOutcomes_Combined
   ))
 
 }
