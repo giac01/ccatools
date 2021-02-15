@@ -40,8 +40,8 @@ A list containing the following components
   \item confint_cc - Predicted Canonical Correlation Confidence Interval
   \item pvalue_cc - P-value for Predicted Canonical Correlation
   \item combined_cc - Table with Predicted Canonical Correlations, Confidence Intervals and P-values
-  \item R2_matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
-  \item R2_matrix_unbiased - Matrix with outcome variables on rows, and columns indicating the variance explained (R2) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+  \item R2_matrix - Matrix with outcome variables on rows, and columns indicating the variance explained (R2; estimated with coefficient of determination) for each outcome variable when using linear regression models to predict each outcome. The columns indicate how much variance can be explained in each outcome when the number of canonical variates extracted varies. The final column indicates how much variance can be explained by a simple linear regression model.
+  \item R2_matrix_BinaryOutcomes_Combined - Same as R2_matrix, but using logistic regression to predict binary outcomes. The same coefficient of determination is calculated using the response residuals and response sums of squares. Will return NULL if there are no binary outcomes. Note that this fucntion automatically recodes binary outcomes to 0/1 for logistic regression.
 }
 }
 \description{
