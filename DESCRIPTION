@@ -1,7 +1,7 @@
 Package: ccatools
 Type: Package
 Title: Tools for Canonical Correlation Analysis
-Version: 0.1.0
+Version: 0.1.1
 Author: Giacomo Bignardi
 Maintainer: Giacomo Bignardi <bignardig@outlook.com>
 Description: Desription... 
@@ -21,7 +21,8 @@ Imports:
     jtools,
     MCMCpack,
     matrixStats,
-    Rfast
+    Rfast,
+    ggplot2
 Exports:
 Suggests: 
     testthat
