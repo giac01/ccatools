@@ -12,7 +12,8 @@ plotcor(
   reportCI = TRUE,
   low_colour = "#EDCB64",
   high_colour = "#B62A3D",
-  abs_colour = TRUE
+  abs_colour = TRUE,
+  cluster_variables = FALSE
 )
 }
 \arguments{

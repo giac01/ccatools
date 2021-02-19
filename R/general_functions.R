@@ -1,3 +1,14 @@
+.sortVar = function(dat){
+
+  cormat = 1 - base::abs(stats::cor(dat, use="pairwise.complete.obs"))
+  cormat = stats::as.dist(cormat)
+  clustres = stats::hclust(cormat)
+
+  return(clustres$order)
+}
+
+
+
 
 # Confidence Interval Function Required for PlotCorrelationMatrix
 .R_ConInt = function(x,y){
@@ -43,9 +54,18 @@
 #'
 plotcor = function(dat,
                                  Variables_Labels=NULL, textadjust=2, includeN=TRUE, reportCI=TRUE,
-                                 low_colour="#EDCB64", high_colour="#B62A3D", abs_colour=TRUE
+                                 low_colour="#EDCB64", high_colour="#B62A3D", abs_colour=TRUE,
+                                 cluster_variables = FALSE
                                  ){
   if (!base::is.data.frame(dat)) {dat=base::as.data.frame(dat)}
+
+  if (cluster_variables) {
+    new_order = ccatools:::.sortVar(dat)
+    dat = dat[,new_order]
+    if (!base::is.null(Variables_Labels)){
+      Variables_Labels = Variables_Labels[,new_order]
+    }
+  }
 
   Variables = base::colnames(dat)
   if(is.null(Variables_Labels)){
@@ -189,5 +209,7 @@ recode_check = function(x, input, output, verbose = TRUE){
   return(after)
 
 }
+
+
 
 
