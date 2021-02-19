@@ -66,7 +66,7 @@ plotcor = function(dat,
     new_order = ccatools:::.sortVar(dat)
     dat = dat[,new_order]
     if (!base::is.null(Variables_Labels)){
-      Variables_Labels = Variables_Labels[,new_order]
+      Variables_Labels = Variables_Labels[new_order]
     }
   }
 
