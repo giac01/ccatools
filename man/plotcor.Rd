@@ -37,7 +37,7 @@ plotcor(
 ggplot
 }
 \description{
-The function provides a wrapper around ggplot2 to quickly create a correlation matrix.
+Create a ggplot2 Correlation Matrix
 }
 \examples{
 X = sapply(1:10, function(i) rnorm(100))
@@ -45,6 +45,5 @@ X = as.data.frame(X)
 My_Labels = c(paste0("Predictor ",1:5), paste0("Outcome ",1:5))
 
 plotcor(X, Variables_Labels = My_Labels, includeN = TRUE, reportCI = FALSE)
-
 
 }

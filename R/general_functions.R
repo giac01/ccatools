@@ -31,6 +31,8 @@
 
 #' Create a ggplot2 Correlation Matrix
 #'
+#' @Decription
+#'
 #' The function provides a wrapper around ggplot2 to quickly create a correlation matrix.
 #'
 #' @param dat Input dataframe or matrix (*do not input a correlation matrix*).
@@ -51,6 +53,7 @@
 #'
 #' plotcor(X, Variables_Labels = My_Labels, includeN = TRUE, reportCI = FALSE)
 #'
+#' @export
 #'
 plotcor = function(dat,
                                  Variables_Labels=NULL, textadjust=2, includeN=TRUE, reportCI=TRUE,
