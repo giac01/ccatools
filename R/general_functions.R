@@ -128,7 +128,7 @@ plotcor = function(dat,
     #scale_fill_brewer(palette=1,na.value="grey")+
     ggplot2::scale_fill_continuous(na.value="gray94",low=low_colour, high=high_colour) +
     ggplot2::theme(legend.position = "#DAECED") +
-    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90,hjust=0.95,vjust=0.2)) +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45,hjust=1)) +
     ggplot2::coord_fixed()
 
   OutPlot

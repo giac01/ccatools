@@ -103,6 +103,25 @@ test_that("Check R2 Estimates Are Good ",{
   )
 })
 
+test_that("Check plotcor",{
+
+  data("mtcars")
+
+
+
+  #Get base R result
+
+  #Get package R result
+  expect_error(
+    ccatools::plotcor(mtcars)
+
+    , NA
+  )
+
+})
+
+
+
 ## ---- Ignore below ----
 
 ## Code to test function
