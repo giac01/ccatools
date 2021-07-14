@@ -57,7 +57,7 @@
 #'
 plotcor = function(dat,
                                  Variables_Labels=NULL, textadjust=2, includeN=TRUE, reportCI=TRUE,
-                                 low_colour="#EDCB64", high_colour="#B62A3D", abs_colour=TRUE,
+                                 low_colour="#0072B2", high_colour="#D55E00", mid_colour="white" abs_colour=TRUE,
                                  cluster_variables = FALSE
                                  ){
   if (!base::is.data.frame(dat)) {dat=base::as.data.frame(dat)}
@@ -126,7 +126,8 @@ plotcor = function(dat,
     ggplot2::geom_text(ggplot2::aes(label=value), size=1.4*textadjust) +
     jtools::theme_apa() +
     #scale_fill_brewer(palette=1,na.value="grey")+
-    ggplot2::scale_fill_continuous(na.value="gray94",low=low_colour, high=high_colour) +
+    # ggplot2::scale_fill_continuous(na.value="gray94",low=low_colour, high=high_colour) +
+    scale_fill_gradient2(low = low_colour, mid = mid_colour, high = high_colour, midpoint = 0, na.value = "#F5F5F5", guide = "colourbar", aesthetics = "fill")
     ggplot2::theme(legend.position = "#DAECED") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45,hjust=1)) +
     ggplot2::coord_fixed()
