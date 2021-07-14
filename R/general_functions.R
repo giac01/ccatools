@@ -57,7 +57,7 @@
 #'
 plotcor = function(dat,
                                  Variables_Labels=NULL, textadjust=2, includeN=TRUE, reportCI=TRUE,
-                                 low_colour="#0072B2", high_colour="#D55E00", mid_colour="white" abs_colour=TRUE,
+                                 low_colour="#0072B2", high_colour="#D55E00", mid_colour="white", abs_colour=TRUE,
                                  cluster_variables = FALSE
                                  ){
   if (!base::is.data.frame(dat)) {dat=base::as.data.frame(dat)}
