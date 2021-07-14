@@ -127,7 +127,7 @@ plotcor = function(dat,
     jtools::theme_apa() +
     #scale_fill_brewer(palette=1,na.value="grey")+
     # ggplot2::scale_fill_continuous(na.value="gray94",low=low_colour, high=high_colour) +
-    scale_fill_gradient2(low = low_colour, mid = mid_colour, high = high_colour, midpoint = 0, na.value = "#F5F5F5", guide = "colourbar", aesthetics = "fill")
+    scale_fill_gradient2(low = low_colour, mid = mid_colour, high = high_colour, midpoint = 0, na.value = "#F5F5F5", guide = "colourbar", aesthetics = "fill") + 
     ggplot2::theme(legend.position = "#DAECED") +
     ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 45,hjust=1)) +
     ggplot2::coord_fixed()
